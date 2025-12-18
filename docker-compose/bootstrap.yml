@@ -1,0 +1,83 @@
+# -----------------------------------------------------------------------------
+# Redpanda bootstrap configuration (QUICKSTART / DEVELOPMENT)
+# - Tệp này dùng để thiết lập các thuộc tính ban đầu của cluster khi khởi động.
+# - Các giá trị hiện tại phù hợp cho môi trường phát triển/quickstart. Không sao chép
+#   nguyên si vào môi trường production mà không xem xét bảo mật, độ bền và vận hành.
+# - Tài liệu tham khảo: https://docs.redpanda.com/current/deploy/
+# -----------------------------------------------------------------------------
+
+# Bắt buộc xác thực cho Admin API (port 9644).
+# Khi bật (true), mọi yêu cầu tới Admin API cần xác thực hợp lệ. Khuyến nghị bật cho
+# môi trường không thuần local để tránh truy cập trái phép.
+admin_api_require_auth: true
+
+# Danh sách tài khoản được cấp quyền 'superuser' ngay tại bootstrap.
+# Superuser có quyền tạo user khác và thao tác quản trị toàn diện trên cluster.
+# Lưu ý: mật khẩu tương ứng được cung cấp tại runtime (ví dụ: biến môi trường RP_BOOTSTRAP_USER
+# trong docker-compose). Trong môi trường production, quản lý mật khẩu bằng secret store.
+superusers:
+  - superuser
+
+# Bật SASL cho các giao thức Kafka (client API) để yêu cầu xác thực khi kết nối.
+# Thông thường dùng cơ chế như SCRAM-SHA-256/SCRAM-SHA-512; cần cấu hình client tương ứng.
+enable_sasl: true
+
+# Cho phép tự động tạo topic khi client publish/subscribe tới topic chưa tồn tại.
+# Tiện cho phát triển nhưng không khuyến nghị bật cho production do rủi ro tạo topic ngoài ý muốn.
+auto_create_topics_enabled: true
+
+# Bật Data Transforms (tính năng chạy WASM transform trên luồng dữ liệu).
+# Sử dụng khi cần deploy transform trực tiếp lên cluster (input → transform → output).
+# Tắt nếu không dùng hoặc môi trường không cho phép chạy WASM.
+data_transforms_enabled: true
+
+# Bật ghi audit (tính năng enterprise). Khi bật, các hành động quản trị và sự kiện quan trọng
+# sẽ được ghi nhận phục vụ mục đích tuân thủ và điều tra.
+# Cần hoạch định nơi lưu trữ, retention và truy cập cho logs khi bật.
+audit_enabled: true
+
+# Bật Tiered Storage (upload segment lên object storage như S3/MinIO).
+cloud_storage_enabled: true
+
+# Tên vùng/region lưu trữ (logic) — giá trị 'local' phù hợp với MinIO local trong quickstart.
+cloud_storage_region: local
+
+# Credential truy cập object storage (MinIO trong example này).
+# Lưu ý an ninh: giá trị plaintext ở đây chỉ dành cho quickstart; production phải dùng secret manager.
+cloud_storage_access_key: minio
+cloud_storage_secret_key: redpandaTieredStorage7
+
+# Endpoint và port của dịch vụ S3-compatible (MinIO).
+# 'cloud_storage_disable_tls: true' tắt TLS để tiện cho môi trường local; KHÔNG tắt TLS trên môi trường công khai.
+cloud_storage_api_endpoint: minio
+cloud_storage_api_endpoint_port: 9000
+cloud_storage_disable_tls: true
+
+# Tên bucket dùng để Redpanda lưu các segment/object.
+cloud_storage_bucket: redpanda
+
+# Khoảng thời gian tối đa (giây) Redpanda đợi trước khi upload segment hoàn thành lên Tiered Storage.
+# Giá trị nhỏ (ví dụ 60s) giúp demo/quickstart upload nhanh hơn; cân nhắc tăng lên trong production
+# để giảm tần suất upload và overhead mạng.
+cloud_storage_segment_max_upload_interval_sec: 60
+
+# Chế độ cân bằng phân vùng (enterprise): 'continuous' cho phép cluster tự động theo dõi và
+# di chuyển phân vùng để cân bằng tải và sử dụng đĩa. Cần xem xét tác động khi bật tự động di chuyển.
+partition_autobalancing_mode: continuous
+
+# Các loại metric của consumer-group mà broker sẽ thu thập.
+# Bao gồm: group-level, partition-level và consumer_lag (độ trễ tiêu thụ).
+enable_consumer_group_metrics:
+  - "group"
+  - "partition"
+  - "consumer_lag"
+
+# Thời gian (giây) thu thập metric consumer lag. 60s phù hợp cho quickstart để có số liệu kịp thời.
+consumer_group_lag_collection_interval_sec: 60
+
+# Bật thu thập metric host (CPU/memory/disk/network) để phục vụ monitoring/observability.
+enable_host_metrics: true
+
+# -----------------------------------------------------------------------------
+# End of bootstrap configuration
+# -----------------------------------------------------------------------------
